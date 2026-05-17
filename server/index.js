@@ -441,11 +441,10 @@ async function start() {
     }
   }
 
-  app.listen(PORT, () => {
-    console.log(`\n✅  Saguaro CRM is running`)
-    console.log(`    Open this in your browser: http://localhost:${PORT}`)
-    console.log(`    Login: admin / saguaro2025`)
-    console.log(`    Database: ${DB_PATH}\n`)
+    app.listen(PORT, '0.0.0.0', () => {
+    console.log('\n✅ Saguaro CRM is running')
+    console.log(`Server listening on port ${PORT}`)
+    console.log(`Database: ${DB_PATH}`)
   })
 }
 
