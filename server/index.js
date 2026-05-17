@@ -121,41 +121,48 @@ function createTables() {
 }
 
 function seedData() {
-  const admin = db.prepare('SELECT id FROM users WHERE username = ?').get('admin')
-  if (!admin) {
-    db.prepare('INSERT INTO users (username,password,role,name) VALUES (?,?,?,?)')
-      .run('admin','saguaro2025','admin','System Administrator')
+  try {
+    const admin = db.prepare("SELECT * FROM users WHERE username=?").get("admin")
+
+    if (!admin) {
+      db.prepare(`
+        INSERT INTO users (username, password, role, name)
+        VALUES (?, ?, ?, ?)
+      `).run(
+        "admin",
+        "saguaro2025",
+        "admin",
+        "System Administrator"
+      )
+
+      console.log("✅ Admin user created")
+    } else {
+      console.log("✓ Admin already exists")
+    }
+
+    const defaults = [
+      ['company_name','Saguaro Private Equity'],
+      ['company_address','Lusaka, Zambia'],
+      ['company_email','info@saguaroprivateequity.com'],
+      ['company_website','www.saguaroprivateequity.com'],
+      ['company_phone','+260 XXX XXX XXX'],
+      ['invoice_prefix','SPE-INV'],
+      ['default_currency','ZMW'],
+      ['default_tax_rate','16']
+    ]
+
+    defaults.forEach(([k,v]) => {
+      const exists = db.prepare('SELECT key FROM settings WHERE key=?').get(k)
+
+      if (!exists) {
+        db.prepare('INSERT INTO settings (key,value) VALUES (?,?)').run(k,v)
+      }
+    })
+
+  } catch (err) {
+    console.error("Seed error:", err)
   }
-  const defaults = [
-    ['company_name','Saguaro Private Equity'],
-    ['company_address','Lusaka, Zambia'],
-    ['company_email','info@saguaroprivateequity.com'],
-    ['company_website','www.saguaroprivateequity.com'],
-    ['company_phone','+260 XXX XXX XXX'],
-    ['invoice_prefix','SPE-INV'],
-    ['default_currency','ZMW'],
-    ['default_tax_rate','16'],
-    ['bank_name','[Your Bank Name]'],
-    ['account_name','Saguaro Private Equity'],
-    ['account_number','[Account Number]'],
-    ['swift_code','[SWIFT Code]'],
-  ]
-  defaults.forEach(([k,v]) => {
-    const exists = db.prepare('SELECT key FROM settings WHERE key=?').get(k)
-    if (!exists) db.prepare('INSERT INTO settings (key,value) VALUES (?,?)').run(k,v)
-  })
 }
-
-// ── Sessions ─────────────────────────────────────────────
-const sessions = new Map()
-const genToken = () => Math.random().toString(36).slice(2) + Date.now().toString(36)
-const auth = (req, res, next) => {
-  const token = req.headers['x-auth-token']
-  if (!token || !sessions.has(token)) return res.status(401).json({ error: 'Unauthorized' })
-  req.user = sessions.get(token)
-  next()
-}
-
 // ══ AUTH ═════════════════════════════════════════════════
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body
